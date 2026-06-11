@@ -6,6 +6,11 @@
 bin/
 *.out
 
+# Adapter test-fixture toolchains (real deps used only to generate/verify
+# golden fixtures locally; the committed fixtures are what CI parses)
+node_modules/
+.venv/
+
 # Editor / OS
 .DS_Store
 .idea/
