@@ -40,6 +40,22 @@ func TestRootHelpFlag(t *testing.T) {
 	}
 }
 
+func TestIsExposed(t *testing.T) {
+	loopback := []string{"127.0.0.1:7878", "localhost:7878", "[::1]:7878", "127.0.0.1", "::1"}
+	exposed := []string{":7878", "0.0.0.0:7878", "[::]:7878", "0.0.0.0", "::", "", "192.168.1.5:7878", "example.com:7878"}
+
+	for _, a := range loopback {
+		if isExposed(a) {
+			t.Errorf("isExposed(%q) = true, want false (loopback)", a)
+		}
+	}
+	for _, a := range exposed {
+		if !isExposed(a) {
+			t.Errorf("isExposed(%q) = false, want true (must require token)", a)
+		}
+	}
+}
+
 func TestRootNoFrameworksDetected(t *testing.T) {
 	// In an empty directory the root command reports no frameworks and exits 0,
 	// without attempting to launch the TUI.

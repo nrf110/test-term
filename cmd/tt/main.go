@@ -217,15 +217,19 @@ func baseCtx(cmd *cobra.Command) context.Context {
 }
 
 // isExposed reports whether addr binds something other than loopback, which
-// requires a token.
+// requires a token. Anything not provably loopback is treated as exposed —
+// notably an empty or wildcard host (":7878", "0.0.0.0", "::"), which binds all
+// interfaces and must never be served without a token.
 func isExposed(addr string) bool {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
 		host = addr
 	}
 	switch host {
-	case "", "localhost", "127.0.0.1", "::1":
+	case "localhost", "127.0.0.1", "::1":
 		return false
+	case "", "0.0.0.0", "::":
+		return true
 	}
 	if ip := net.ParseIP(host); ip != nil {
 		return !ip.IsLoopback()

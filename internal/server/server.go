@@ -10,6 +10,7 @@ package server
 
 import (
 	"context"
+	"crypto/subtle"
 	"net/http"
 	"sync"
 
@@ -51,7 +52,10 @@ func (s *Server) authorized(r *http.Request) bool {
 	if s.token == "" {
 		return true
 	}
-	return r.Header.Get("Authorization") == "Bearer "+s.token
+	// Constant-time comparison avoids leaking the token via response timing.
+	expected := "Bearer " + s.token
+	got := r.Header.Get("Authorization")
+	return subtle.ConstantTimeCompare([]byte(got), []byte(expected)) == 1
 }
 
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
