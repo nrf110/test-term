@@ -55,12 +55,24 @@ func TestEndToEndRunThroughServer(t *testing.T) {
 	}
 
 	// Trigger a full run over the wire; results stream back to the mirror.
+	// Events arrive asynchronously, so wait until both tests reach their
+	// terminal state rather than assuming an ordering between them.
 	cl.Run(engine.Selection{All: true})
+	terminal := func(id string) event.Status {
+		if n := cl.Engine().Get(id); n != nil {
+			return n.Status
+		}
+		return ""
+	}
 	waitUntil(t, func() bool {
-		n := cl.Engine().Get("go:example.com/sample::TestAdd")
-		return n != nil && n.Status == event.StatusPass
+		return terminal("go:example.com/sample::TestAdd").Terminal() &&
+			terminal("go:example.com/sample::TestAlwaysFails").Terminal()
 	})
-	if n := cl.Engine().Get("go:example.com/sample::TestAlwaysFails"); n == nil || n.Status != event.StatusFail {
-		t.Fatalf("failing test mirrored as %v, want fail", n)
+
+	if got := terminal("go:example.com/sample::TestAdd"); got != event.StatusPass {
+		t.Errorf("TestAdd mirrored as %q, want pass", got)
+	}
+	if got := terminal("go:example.com/sample::TestAlwaysFails"); got != event.StatusFail {
+		t.Errorf("TestAlwaysFails mirrored as %q, want fail", got)
 	}
 }
