@@ -16,8 +16,10 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	gomcp "github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/nrf110/test-term/internal/engine"
+	"github.com/nrf110/test-term/internal/mcpsrv"
 	"github.com/nrf110/test-term/internal/protocol"
 )
 
@@ -40,12 +42,35 @@ func New(eng *engine.Session, ctrl Commander, token string) *Server {
 	return &Server{eng: eng, ctrl: ctrl, token: token}
 }
 
-// Handler returns the HTTP handler (currently just /ws). Later phases mount the
-// MCP endpoint on the same mux.
+// Handler returns the HTTP handler: /ws for the TUI client protocol and /mcp
+// for AI agents. Both drive and observe the same engine session.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", s.handleWS)
+
+	mcpServer := mcpsrv.NewServer(s.eng, s.ctrl)
+	mcpHandler := gomcp.NewStreamableHTTPHandler(
+		func(*http.Request) *gomcp.Server { return mcpServer },
+		nil,
+	)
+	if s.token == "" {
+		mux.Handle("/mcp", mcpHandler)
+	} else {
+		mux.Handle("/mcp", s.requireToken(mcpHandler))
+	}
 	return mux
+}
+
+// requireToken wraps a handler with the same bearer-token check used for /ws,
+// so the MCP endpoint is gated whenever a token is configured.
+func (s *Server) requireToken(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.authorized(r) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) authorized(r *http.Request) bool {
