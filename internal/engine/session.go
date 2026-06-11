@@ -53,6 +53,28 @@ func New() *Session {
 	return &Session{index: make(map[string]*Node), subs: make(map[int]*subscriber)}
 }
 
+// NewFromSnapshot builds a session pre-populated from a snapshot tree (as
+// returned by Snapshot or Subscription.Snapshot). It is how a client seeds its
+// render-model before applying the live event stream: the same tree logic that
+// powers the engine also powers the client, so they cannot diverge.
+func NewFromSnapshot(roots []*Node) *Session {
+	s := New()
+	for _, r := range roots {
+		c := r.clone()
+		s.roots = append(s.roots, c)
+		s.indexSubtree(c)
+	}
+	return s
+}
+
+// indexSubtree registers a node and its descendants in the ID index.
+func (s *Session) indexSubtree(n *Node) {
+	s.index[n.ID] = n
+	for _, c := range n.Children {
+		s.indexSubtree(c)
+	}
+}
+
 // Apply updates the tree from a single event and fans the event out to all
 // subscribers. Fan-out happens after the lock is released so a slow subscriber
 // cannot stall tree mutation; subscriber channels are buffered to absorb bursts.

@@ -223,6 +223,30 @@ func TestApplyDoesNotBlockOnClosedSubscriberDuringFanout(t *testing.T) {
 	}
 }
 
+func TestNewFromSnapshotRebuildsAndStaysLive(t *testing.T) {
+	src := buildSampleTree()
+	src.Apply(event.NodeFinished("f::a", event.StatusPass, 5, nil))
+
+	// Seed a client model from the snapshot, then keep applying events.
+	client := engineFromSnapshot(src)
+	if got := client.Get("f::a"); got == nil || got.Status != event.StatusPass {
+		t.Fatalf("seeded node f::a = %v, want pass", got)
+	}
+	if got := client.Resolve(Selection{All: true}); !reflect.DeepEqual(got, []string{"f::a", "f::b", "g::c"}) {
+		t.Fatalf("seeded resolve = %v", got)
+	}
+
+	// A live event applies with the same roll-up logic as the engine.
+	client.Apply(event.NodeFinished("f::b", event.StatusFail, 3, &event.Failure{Message: "x"}))
+	if got := client.Get("f"); got == nil || got.Status != event.StatusFail {
+		t.Fatalf("client container roll-up = %v, want fail", got)
+	}
+}
+
+func engineFromSnapshot(src *Session) *Session {
+	return NewFromSnapshot(src.Snapshot())
+}
+
 func TestResolveAll(t *testing.T) {
 	s := buildSampleTree()
 	got := s.Resolve(Selection{All: true})

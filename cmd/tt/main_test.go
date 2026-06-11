@@ -25,17 +25,33 @@ func TestRootVersion(t *testing.T) {
 	}
 }
 
-func TestRootNoArgsShowsHelp(t *testing.T) {
+func TestRootHelpFlag(t *testing.T) {
 	cmd := newRootCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
-	cmd.SetArgs([]string{})
+	cmd.SetArgs([]string{"--help"})
 
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("execute with no args: %v", err)
+		t.Fatalf("execute --help: %v", err)
 	}
 
 	if !strings.Contains(out.String(), "terminal-UI test runner") {
 		t.Fatalf("expected help text, got %q", out.String())
+	}
+}
+
+func TestRootNoFrameworksDetected(t *testing.T) {
+	// In an empty directory the root command reports no frameworks and exits 0,
+	// without attempting to launch the TUI.
+	cmd := newRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{t.TempDir()})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("execute on empty dir: %v", err)
+	}
+	if !strings.Contains(out.String(), "No supported test frameworks") {
+		t.Fatalf("expected no-frameworks message, got %q", out.String())
 	}
 }
