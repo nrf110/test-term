@@ -48,9 +48,11 @@ type Model struct {
 	help help.Model
 }
 
-// New builds a Model. It subscribes to the engine immediately so the snapshot
-// reflects everything discovered before launch; the live stream is consumed in
-// Update. autoRun requests an initial full run on startup.
+// New builds a Model over the given session (an in-process engine or a client's
+// mirror — the TUI cannot tell the difference). The TUI is a pure view: it reads
+// snapshots from the session and treats the event stream as change signals. The
+// session is fed by its owner (a local runner or the client's WebSocket reader),
+// so the TUI never applies events itself.
 func New(eng *engine.Session, ctrl Controller, project, conn string) Model {
 	sub := eng.Subscribe(1024)
 	fi := textinput.New()
@@ -58,7 +60,7 @@ func New(eng *engine.Session, ctrl Controller, project, conn string) Model {
 	fi.Prompt = "/"
 
 	m := Model{
-		session:  engine.NewFromSnapshot(sub.Snapshot),
+		session:  eng,
 		sub:      sub,
 		ctrl:     ctrl,
 		project:  project,
@@ -112,9 +114,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case eventMsg:
-		e := event.Event(msg)
-		m.session.Apply(e)
-		switch e.Type {
+		// The session owner has already applied this event; we only react to it
+		// as a change signal and re-read the live tree.
+		switch event.Event(msg).Type {
 		case event.TypeRunStarted:
 			m.running = true
 		case event.TypeRunFinished:
