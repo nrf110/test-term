@@ -1,0 +1,10 @@
+{"Action":"run","Package":"p","Test":"TestParent"}
+{"Action":"output","Package":"p","Test":"TestParent","Output":"=== RUN   TestParent\n"}
+{"Action":"run","Package":"p","Test":"TestParent/sub_a"}
+{"Action":"output","Package":"p","Test":"TestParent/sub_a","Output":"=== RUN   TestParent/sub_a\n"}
+{"Action":"run","Package":"p","Test":"TestParent/sub_b"}
+{"Action":"pass","Package":"p","Test":"TestParent/sub_a","Elapsed":0}
+{"Action":"output","Package":"p","Test":"TestParent/sub_b","Output":"    p_test.go:30: boom\n"}
+{"Action":"fail","Package":"p","Test":"TestParent/sub_b","Elapsed":0}
+{"Action":"fail","Package":"p","Test":"TestParent","Elapsed":0.01}
+{"Action":"fail","Package":"p","Elapsed":0.01}

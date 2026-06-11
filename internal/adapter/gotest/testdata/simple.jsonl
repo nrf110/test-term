@@ -1,0 +1,14 @@
+{"Action":"start","Package":"example.com/m/calc"}
+{"Action":"run","Package":"example.com/m/calc","Test":"TestAdd"}
+{"Action":"output","Package":"example.com/m/calc","Test":"TestAdd","Output":"=== RUN   TestAdd\n"}
+{"Action":"pass","Package":"example.com/m/calc","Test":"TestAdd","Elapsed":0.01}
+{"Action":"run","Package":"example.com/m/calc","Test":"TestSub"}
+{"Action":"output","Package":"example.com/m/calc","Test":"TestSub","Output":"=== RUN   TestSub\n"}
+{"Action":"output","Package":"example.com/m/calc","Test":"TestSub","Output":"    sub_test.go:21: expected 1, got 2\n"}
+{"Action":"output","Package":"example.com/m/calc","Test":"TestSub","Output":"--- FAIL: TestSub (0.00s)\n"}
+{"Action":"fail","Package":"example.com/m/calc","Test":"TestSub","Elapsed":0.002}
+{"Action":"run","Package":"example.com/m/calc","Test":"TestSkip"}
+{"Action":"output","Package":"example.com/m/calc","Test":"TestSkip","Output":"=== RUN   TestSkip\n"}
+{"Action":"output","Package":"example.com/m/calc","Test":"TestSkip","Output":"--- SKIP: TestSkip (0.00s)\n"}
+{"Action":"skip","Package":"example.com/m/calc","Test":"TestSkip","Elapsed":0}
+{"Action":"fail","Package":"example.com/m/calc","Elapsed":0.012}

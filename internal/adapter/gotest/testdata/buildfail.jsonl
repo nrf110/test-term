@@ -1,0 +1,4 @@
+{"Action":"start","Package":"p/broken"}
+{"Action":"output","Package":"p/broken","Output":"# p/broken\n"}
+{"Action":"output","Package":"p/broken","Output":"./broken.go:5:2: undefined: Foo\n"}
+{"Action":"fail","Package":"p/broken","Elapsed":0}
