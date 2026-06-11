@@ -9,7 +9,8 @@
 
 - **TDD loop per task:** write a failing test → make it pass → refactor. Adapter
   parsers use golden-file fixtures captured from real framework output.
-- **Module path:** `github.com/nickfisher/tt` (adjust if the repo lands elsewhere).
+- **Module path:** `github.com/nrf110/test-term` (binary installs as `tt`).
+- **License:** MIT.
 - **Go version:** latest stable (1.23+).
 - **Each phase ends green:** `go test ./...` passes, `go vet ./...` clean, and the
   phase's demo command works.
@@ -22,7 +23,7 @@
 **Goal:** A compiling, testable Go module with CI and tooling in place.
 
 Tasks:
-1. `go mod init github.com/nickfisher/tt`; add `cmd/tt/main.go` with a stub root
+1. `go mod init github.com/nrf110/test-term`; add `cmd/tt/main.go` with a stub root
    command (Cobra) that prints version and exits.
 2. Add dependencies: `cobra` (CLI), `bubbletea`/`lipgloss`/`bubbles` (TUI),
    `gorilla/websocket` or `nhooyr/coder websocket` (WS), the official Go MCP SDK,
@@ -30,7 +31,7 @@ Tasks:
 3. Add `Makefile`/`Taskfile` targets: `build`, `test`, `lint`, `run`.
 4. Add GitHub Actions CI: `go test ./...`, `go vet`, `golangci-lint`, build matrix
    (linux/darwin, amd64/arm64).
-5. Add `README.md` stub and `LICENSE` (MIT or Apache-2.0 — confirm with maintainer).
+5. Add `README.md` stub and `LICENSE` (MIT).
 
 **Acceptance:** `go build ./... && go test ./...` succeed; `tt --version` runs; CI green.
 
