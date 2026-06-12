@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -37,6 +39,31 @@ func TestRootHelpFlag(t *testing.T) {
 
 	if !strings.Contains(out.String(), "terminal-UI test runner") {
 		t.Fatalf("expected help text, got %q", out.String())
+	}
+}
+
+func TestRegistryDetectsMultipleFrameworks(t *testing.T) {
+	// A monorepo-style directory with markers for all three frameworks should
+	// be detected by all three adapters, in registration order.
+	dir := t.TempDir()
+	write := func(name, content string) {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("go.mod", "module example.com/m\n\ngo 1.23\n")
+	write("package.json", `{"devDependencies":{"vitest":"^2.0.0"}}`)
+	write("test_thing.py", "def test_ok():\n    assert True\n")
+
+	detected := registry().Detect(dir)
+	got := map[string]bool{}
+	for _, d := range detected {
+		got[d.Adapter.Name()] = true
+	}
+	for _, name := range []string{"go", "vitest", "pytest"} {
+		if !got[name] {
+			t.Errorf("framework %q not detected in mixed project", name)
+		}
 	}
 }
 

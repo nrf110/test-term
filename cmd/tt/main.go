@@ -22,6 +22,7 @@ import (
 
 	"github.com/nrf110/test-term/internal/adapter"
 	"github.com/nrf110/test-term/internal/adapter/gotest"
+	"github.com/nrf110/test-term/internal/adapter/pytest"
 	"github.com/nrf110/test-term/internal/adapter/vitest"
 	"github.com/nrf110/test-term/internal/client"
 	"github.com/nrf110/test-term/internal/engine"
@@ -101,7 +102,7 @@ func dirArg(args []string) string {
 
 // registry returns the adapters available in this build.
 func registry() *adapter.Registry {
-	return adapter.NewRegistry(gotest.New(), vitest.New())
+	return adapter.NewRegistry(gotest.New(), vitest.New(), pytest.New())
 }
 
 // setupEngine detects frameworks under dir, discovers tests, and returns a ready

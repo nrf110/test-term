@@ -1,0 +1,8 @@
+test_math.py::test_add_positive
+test_math.py::test_add_fails
+test_math.py::test_skipped
+test_math.py::test_param[1-1-2]
+test_math.py::test_param[2-3-5]
+test_math.py::TestGroup::test_method
+
+6 tests collected in 0.00s
