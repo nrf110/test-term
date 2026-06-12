@@ -78,6 +78,29 @@ func TestSnapshotHandshakeSeedsMirror(t *testing.T) {
 	}
 }
 
+func TestLargeSnapshotExceedingDefaultReadLimit(t *testing.T) {
+	// A snapshot bigger than the WebSocket library's 32 KiB default must still
+	// be read. Real repos (and big failure messages) routinely exceed it.
+	eng := engine.New()
+	eng.Apply(event.NodeDiscovered("go:p::Big", "", "Big", event.KindTest, nil))
+	bigMessage := strings.Repeat("x", 100*1024) // 100 KiB, well over the default
+	eng.Apply(event.NodeFinished("go:p::Big", event.StatusFail, 1, &event.Failure{Message: bigMessage}))
+
+	ts := httptest.NewServer(server.New(eng, &fakeCommander{}, "").Handler())
+	defer ts.Close()
+
+	cl, err := client.Dial(context.Background(), addrOf(ts), "")
+	if err != nil {
+		t.Fatalf("dial with large snapshot: %v", err)
+	}
+	defer func() { _ = cl.Close() }()
+
+	n := cl.Engine().Get("go:p::Big")
+	if n == nil || n.Failure == nil || len(n.Failure.Message) != len(bigMessage) {
+		t.Fatalf("large snapshot not fully mirrored: %+v", n)
+	}
+}
+
 func TestLiveEventsMirrorToClient(t *testing.T) {
 	eng := engine.New()
 	ts := httptest.NewServer(server.New(eng, &fakeCommander{}, "").Handler())

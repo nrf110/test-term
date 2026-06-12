@@ -42,6 +42,10 @@ func Dial(dialCtx context.Context, addr, token string) (*Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("connecting to %s: %w", addr, err)
 	}
+	// The initial snapshot of a large test tree (and individual events carrying
+	// big failure messages) easily exceeds the library's 32 KiB default. We read
+	// from our own engine server, so a generous limit is safe.
+	conn.SetReadLimit(64 << 20)
 
 	// The first frame must be the snapshot, which seeds the mirror.
 	var first protocol.Message

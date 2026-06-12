@@ -5,6 +5,7 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -32,15 +33,30 @@ func New(base context.Context, eng *engine.Session, targets []adapter.Detected) 
 	return &Runner{eng: eng, targets: targets, base: base}
 }
 
-// Discover populates the engine's tree from every detected adapter. It runs
-// synchronously and is intended to be called once before the UI starts.
+// Discover populates the engine's tree from every detected adapter. A single
+// adapter's failure (e.g. a missing toolchain) must not break the others, so
+// failures are surfaced as diagnostic nodes and discovery continues. An error
+// is returned only if every detected adapter failed.
 func (r *Runner) Discover(ctx context.Context) error {
+	failed := 0
 	for _, t := range r.targets {
 		if err := t.Adapter.Discover(ctx, t.Detection.RootDir, r.eng.Apply); err != nil {
-			return err
+			failed++
+			r.emitDiscoveryError(t.Adapter.Name(), err)
 		}
 	}
+	if len(r.targets) > 0 && failed == len(r.targets) {
+		return fmt.Errorf("all %d detected framework(s) failed to discover tests", failed)
+	}
 	return nil
+}
+
+// emitDiscoveryError surfaces a failed adapter as a top-level error node so the
+// user sees what went wrong without losing the frameworks that did work.
+func (r *Runner) emitDiscoveryError(name string, err error) {
+	id := "!diag:" + name
+	r.eng.Apply(event.NodeDiscovered(id, "", name+" (discovery failed)", event.KindFile, nil))
+	r.eng.Apply(event.NodeFinished(id, event.StatusError, 0, &event.Failure{Message: err.Error()}))
 }
 
 // Run starts a run for the selection. It is non-blocking; if a run is already in

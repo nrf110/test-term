@@ -2,6 +2,8 @@ package runner
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -13,9 +15,10 @@ import (
 
 // fakeAdapter is a scriptable adapter for runner tests.
 type fakeAdapter struct {
-	name      string
-	emitOnRun []event.Event
-	gate      chan struct{} // if set, Run blocks until closed or ctx is done
+	name        string
+	emitOnRun   []event.Event
+	gate        chan struct{} // if set, Run blocks until closed or ctx is done
+	discoverErr error         // if set, Discover returns this without emitting
 
 	mu          sync.Mutex
 	runs        int
@@ -28,6 +31,9 @@ func (f *fakeAdapter) Detect(string) (adapter.Detection, bool) {
 	return adapter.Detection{}, false
 }
 func (f *fakeAdapter) Discover(_ context.Context, _ string, emit adapter.Emit) error {
+	if f.discoverErr != nil {
+		return f.discoverErr
+	}
 	emit(event.NodeDiscovered(f.name+":p::T", "", "T", event.KindTest, nil))
 	return nil
 }
@@ -91,6 +97,42 @@ func TestDiscoverPopulatesEngine(t *testing.T) {
 	}
 	if eng.Get("go:p::T") == nil {
 		t.Fatal("Discover did not populate the engine")
+	}
+}
+
+func TestDiscoverContinuesPastFailingAdapter(t *testing.T) {
+	eng := engine.New()
+	good := &fakeAdapter{name: "go"}
+	bad := &fakeAdapter{name: "pytest", discoverErr: errors.New("python3: No module named pytest")}
+	targets := []adapter.Detected{
+		{Adapter: good, Detection: adapter.Detection{RootDir: "/x"}},
+		{Adapter: bad, Detection: adapter.Detection{RootDir: "/y"}},
+	}
+	r := New(context.Background(), eng, targets)
+
+	if err := r.Discover(context.Background()); err != nil {
+		t.Fatalf("Discover should succeed when one adapter works, got %v", err)
+	}
+	if eng.Get("go:p::T") == nil {
+		t.Error("working adapter's nodes were lost when another failed")
+	}
+	diag := eng.Get("!diag:pytest")
+	if diag == nil || diag.Status != event.StatusError {
+		t.Fatalf("expected an error diagnostic node for the failed adapter, got %v", diag)
+	}
+	if diag.Failure == nil || !strings.Contains(diag.Failure.Message, "No module named pytest") {
+		t.Errorf("diagnostic should carry the adapter error, got %+v", diag.Failure)
+	}
+}
+
+func TestDiscoverAllFailedReturnsError(t *testing.T) {
+	eng := engine.New()
+	bad := &fakeAdapter{name: "pytest", discoverErr: errors.New("boom")}
+	r := New(context.Background(), eng, []adapter.Detected{
+		{Adapter: bad, Detection: adapter.Detection{RootDir: "/y"}},
+	})
+	if err := r.Discover(context.Background()); err == nil {
+		t.Error("Discover should return an error when every adapter fails")
 	}
 }
 

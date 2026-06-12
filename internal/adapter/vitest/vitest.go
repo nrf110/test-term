@@ -32,7 +32,7 @@ func (a *Adapter) Name() string { return "vitest" }
 var (
 	testFileRe   = regexp.MustCompile(`\.(test|spec)\.(js|jsx|ts|tsx|mjs|cjs)$`)
 	configFileRe = regexp.MustCompile(`^v(?:i|ite)test?\.config\.|^vite\.config\.`)
-	skipDirs     = map[string]bool{"node_modules": true, ".git": true, "dist": true, "coverage": true, ".vitest": true, "build": true}
+	skipDirs     = map[string]bool{"node_modules": true, ".git": true, "dist": true, "coverage": true, ".vitest": true, "build": true, "testdata": true, "vendor": true}
 )
 
 // Detect reports a Vitest project: the nearest ancestor with a Vitest config or

@@ -98,6 +98,9 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() { _ = c.CloseNow() }()
+	// Commands are small, but a selection of many node IDs can exceed the 32 KiB
+	// default; allow a modest bound above that.
+	c.SetReadLimit(4 << 20)
 
 	ctx := r.Context()
 	sub := s.eng.Subscribe(1024)

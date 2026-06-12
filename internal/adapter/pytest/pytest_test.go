@@ -54,6 +54,31 @@ func requirePytest(t *testing.T) (*Adapter, string) {
 	return NewWithPython(py), sampleDir(t)
 }
 
+func TestDetectIgnoresTestdataFixtures(t *testing.T) {
+	a := New()
+	dir := t.TempDir()
+
+	// A Python test file under testdata/ is a fixture, not the project's tests.
+	td := filepath.Join(dir, "testdata", "proj")
+	if err := os.MkdirAll(td, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(td, "test_x.py"), []byte("def test_ok():\n    assert True\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := a.Detect(dir); ok {
+		t.Error("pytest should not detect from testdata fixtures")
+	}
+
+	// A top-level test file is the real signal.
+	if err := os.WriteFile(filepath.Join(dir, "test_top.py"), []byte("def test_ok():\n    assert True\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := a.Detect(dir); !ok {
+		t.Error("pytest should detect a top-level test file")
+	}
+}
+
 func TestEmitDiagnosticExplainsMissingPlugin(t *testing.T) {
 	a := New()
 	var rec recorder

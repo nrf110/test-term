@@ -42,7 +42,7 @@ func (a *Adapter) Name() string { return "pytest" }
 var (
 	testFileRe  = regexp.MustCompile(`(^test_.*\.py$)|(.*_test\.py$)`)
 	configFiles = map[string]bool{"pytest.ini": true, "conftest.py": true, "tox.ini": true}
-	skipDirs    = map[string]bool{".venv": true, "venv": true, ".git": true, "node_modules": true, "__pycache__": true, ".tox": true, ".mypy_cache": true}
+	skipDirs    = map[string]bool{".venv": true, "venv": true, ".git": true, "node_modules": true, "__pycache__": true, ".tox": true, ".mypy_cache": true, "testdata": true, "vendor": true}
 )
 
 // Detect reports a pytest project rooted at dir if it contains a pytest config
