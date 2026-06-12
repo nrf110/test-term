@@ -33,6 +33,20 @@ func send(m Model, msg tea.Msg) Model {
 	return nm.(Model)
 }
 
+func TestLayoutFitsTerminalHeight(t *testing.T) {
+	for _, h := range []int{6, 8, 10, 24, 50} {
+		m := Model{height: h}
+		th, dh := m.layout()
+		// header(1) + sep(1) + tree + sep(1) + detail + footer(1) must fit.
+		if total := th + dh + 4; total > h {
+			t.Errorf("height %d: layout total %d (tree %d + detail %d + 4) overflows", h, total, th, dh)
+		}
+		if th < 1 || dh < 1 {
+			t.Errorf("height %d: tree %d / detail %d must each be >= 1", h, th, dh)
+		}
+	}
+}
+
 func TestInitialViewRendersTree(t *testing.T) {
 	m := newTestModel(t, &fakeController{})
 	if len(m.rows) != 5 {

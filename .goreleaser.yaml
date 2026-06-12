@@ -1,0 +1,45 @@
+version: 2
+
+project_name: tt
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: tt
+    main: ./cmd/tt
+    binary: tt
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - id: tt
+    formats:
+      - tar.gz
+    name_template: "tt_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  github:
+    owner: nrf110
+    name: test-term

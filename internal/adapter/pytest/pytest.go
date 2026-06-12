@@ -5,6 +5,7 @@
 package pytest
 
 import (
+	"bytes"
 	"context"
 	"io/fs"
 	"os"
@@ -112,15 +113,24 @@ func (a *Adapter) Run(ctx context.Context, dir string, sel adapter.Selection, em
 
 	args := append([]string{"--report-log=" + logPath, "-q"}, selectionNodeIDs(sel)...)
 	cmd := a.command(ctx, dir, args...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	if runErr := cmd.Run(); runErr != nil {
 		if _, ok := runErr.(*exec.ExitError); !ok {
-			return runErr // pytest could not start
+			return runErr // pytest could not start at all
 		}
 	}
 
 	data, err := os.ReadFile(logPath)
 	if err != nil {
 		return err
+	}
+	// An empty report despite a run usually means the pytest-reportlog plugin
+	// isn't installed (so --report-log was rejected). Surface that as a visible
+	// diagnostic node rather than failing silently.
+	if len(bytes.TrimSpace(data)) == 0 {
+		a.emitDiagnostic(emit, stderr.String())
+		return nil
 	}
 	p := newRunParser(emit, dir)
 	if perr := p.parse(strings.NewReader(string(data))); perr != nil {
@@ -141,6 +151,22 @@ func (a *Adapter) Locate(nodeID string) (event.Location, bool) {
 	defer a.mu.Unlock()
 	loc, ok := a.locs[nodeID]
 	return loc, ok
+}
+
+// emitDiagnostic surfaces a setup problem (e.g. a missing plugin) as an error
+// node so the user sees an explanation in the tree instead of an empty run.
+func (a *Adapter) emitDiagnostic(emit adapter.Emit, stderr string) {
+	msg := strings.TrimSpace(stderr)
+	if strings.Contains(msg, "report-log") || strings.Contains(msg, "reportlog") || msg == "" {
+		hint := "pytest produced no report. The pytest-reportlog plugin is required:\n\n    pip install pytest-reportlog"
+		if msg != "" {
+			hint += "\n\n" + msg
+		}
+		msg = hint
+	}
+	id := nodeID("<pytest>")
+	emit(event.NodeDiscovered(id, "", "pytest (setup error)", event.KindFile, nil))
+	emit(event.NodeFinished(id, event.StatusError, 0, &event.Failure{Message: msg}))
 }
 
 func (a *Adapter) command(ctx context.Context, dir string, args ...string) *exec.Cmd {

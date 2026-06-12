@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/nrf110/test-term/internal/adapter"
@@ -51,6 +52,20 @@ func requirePytest(t *testing.T) (*Adapter, string) {
 		t.Skip("pytest not available in .venv")
 	}
 	return NewWithPython(py), sampleDir(t)
+}
+
+func TestEmitDiagnosticExplainsMissingPlugin(t *testing.T) {
+	a := New()
+	var rec recorder
+	a.emitDiagnostic(rec.emit, "pytest: error: unrecognized arguments: --report-log=/tmp/x")
+
+	e, ok := rec.finished(nodeID("<pytest>"))
+	if !ok || e.Status != event.StatusError {
+		t.Fatalf("expected an error node, got %+v ok=%v", e, ok)
+	}
+	if e.Failure == nil || !strings.Contains(e.Failure.Message, "pip install pytest-reportlog") {
+		t.Fatalf("diagnostic should mention the plugin install, got %+v", e.Failure)
+	}
 }
 
 func TestDiscoverRealPytest(t *testing.T) {

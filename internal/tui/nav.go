@@ -2,18 +2,33 @@ package tui
 
 import "github.com/nrf110/test-term/internal/engine"
 
-// detailLines is the fixed height of the detail region (title + message body).
+// detailLines is the preferred height of the detail region (title + message
+// body). It shrinks on short terminals via layout.
 const detailLines = 6
 
-// treeHeight is the number of visible tree rows given the current terminal size
-// and the fixed header/separator/detail/footer chrome.
-func (m Model) treeHeight() int {
-	// header(1) + sep(1) + tree + sep(1) + detail(detailLines) + footer(1)
-	h := m.height - detailLines - 4
-	if h < 1 {
-		return 1
+// layout distributes the terminal height across the tree and detail regions,
+// accounting for fixed chrome (header + two separators + footer = 4 lines). On
+// short terminals the detail region shrinks first, then the tree, so the UI
+// never overflows for any height >= ~6.
+func (m Model) layout() (treeH, detailH int) {
+	detailH = detailLines
+	if maxDetail := m.height - 6; detailH > maxDetail {
+		detailH = maxDetail
 	}
-	return h
+	if detailH < 1 {
+		detailH = 1
+	}
+	treeH = m.height - detailH - 4
+	if treeH < 1 {
+		treeH = 1
+	}
+	return treeH, detailH
+}
+
+// treeHeight is the number of visible tree rows for the current size.
+func (m Model) treeHeight() int {
+	th, _ := m.layout()
+	return th
 }
 
 // rebuild recomputes the visible row list from the current tree, filter, and

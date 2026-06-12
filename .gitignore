@@ -4,6 +4,7 @@
 # Go
 /tt
 bin/
+dist/
 *.out
 
 # Adapter test-fixture toolchains (real deps used only to generate/verify

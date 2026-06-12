@@ -20,14 +20,14 @@ func (m Model) View() string {
 		return m.renderHelpScreen()
 	}
 
-	th := m.treeHeight()
+	th, dh := m.layout()
 	sep := styleBar.Render(strings.Repeat("─", m.width))
 	return strings.Join([]string{
 		m.renderHeader(),
 		sep,
 		m.renderTreeRegion(th),
 		sep,
-		m.renderDetailRegion(detailLines),
+		m.renderDetailRegion(dh),
 		m.renderFooter(),
 	}, "\n")
 }
