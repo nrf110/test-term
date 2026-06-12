@@ -14,7 +14,7 @@ import (
 // This exercises Init/Update/View and the event pump end-to-end, which the
 // pure-function tests cannot.
 func TestProgramRendersAndQuits(t *testing.T) {
-	m := New(seedSession(), &fakeController{}, "/proj", "local")
+	m := New(seedSession(), &fakeController{}, "/proj", "local", "")
 	tm := teatest.NewTestModel(t, m, teatest.WithInitialTermSize(100, 30))
 
 	teatest.WaitFor(t, tm.Output(), func(b []byte) bool {

@@ -28,8 +28,9 @@ type Model struct {
 	sub     *engine.Subscription
 	ctrl    Controller
 
-	project string // shown in the header
-	conn    string // connection descriptor, e.g. "local"
+	project   string // shown in the header
+	conn      string // connection descriptor, e.g. "local"
+	editorCmd string // editor command template for jump-to-test (may be empty)
 
 	width, height int
 	rows          []row
@@ -53,22 +54,23 @@ type Model struct {
 // snapshots from the session and treats the event stream as change signals. The
 // session is fed by its owner (a local runner or the client's WebSocket reader),
 // so the TUI never applies events itself.
-func New(eng *engine.Session, ctrl Controller, project, conn string) Model {
+func New(eng *engine.Session, ctrl Controller, project, conn, editorCmd string) Model {
 	sub := eng.Subscribe(1024)
 	fi := textinput.New()
 	fi.Placeholder = "filter tests"
 	fi.Prompt = "/"
 
 	m := Model{
-		session:  eng,
-		sub:      sub,
-		ctrl:     ctrl,
-		project:  project,
-		conn:     conn,
-		expanded: map[string]bool{},
-		filter:   fi,
-		keys:     defaultKeys(),
-		help:     help.New(),
+		session:   eng,
+		sub:       sub,
+		ctrl:      ctrl,
+		project:   project,
+		conn:      conn,
+		editorCmd: editorCmd,
+		expanded:  map[string]bool{},
+		filter:    fi,
+		keys:      defaultKeys(),
+		help:      help.New(),
 	}
 	// Roots start expanded so the tree is visible immediately.
 	for _, r := range sub.Snapshot {
@@ -128,6 +130,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case eventsClosedMsg:
 		return m, nil
 
+	case editorClosedMsg:
+		if msg.err != nil {
+			m.notice = "editor exited with error: " + msg.err.Error()
+		}
+		return m, nil
+
 	case tea.KeyMsg:
 		return m.handleKey(msg)
 	}
@@ -168,7 +176,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case key.Matches(msg, k.Cancel):
 		m.ctrl.Cancel()
 	case key.Matches(msg, k.Open):
-		m.notice = "editor integration arrives in a later phase"
+		return m.openSelected()
 	case key.Matches(msg, k.Filter):
 		m.filtering = true
 		m.filter.Focus()

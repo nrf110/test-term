@@ -21,7 +21,7 @@ func (f *fakeController) Cancel()                  { f.canceled++ }
 
 func newTestModel(t *testing.T, ctrl Controller) Model {
 	t.Helper()
-	m := New(seedSession(), ctrl, "/proj", "local")
+	m := New(seedSession(), ctrl, "/proj", "local", "")
 	nm, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
 	return nm.(Model)
 }
@@ -138,13 +138,27 @@ func TestDetailShowsFailureMessageAndLocation(t *testing.T) {
 	}
 }
 
-func TestOpenKeyShowsNotice(t *testing.T) {
-	m := newTestModel(t, &fakeController{})
-	m = send(m, runes("o"))
-	if !strings.Contains(m.notice, "editor") {
-		t.Fatalf("notice = %q, want editor message", m.notice)
+func TestOpenWithNoEditorShowsNotice(t *testing.T) {
+	m := newTestModel(t, &fakeController{}) // model built with editorCmd == ""
+	// Select T1, which has a source location, so we reach the editor check.
+	m = send(m, tea.KeyMsg{Type: tea.KeyDown})
+	if m.selectedNode().ID != "f::T1" {
+		t.Fatalf("expected cursor on f::T1, got %s", m.selectedNode().ID)
 	}
-	if !strings.Contains(ansi.Strip(m.View()), "editor") {
-		t.Error("footer should show the editor notice")
+	m = send(m, runes("o"))
+	if !strings.Contains(m.notice, "no editor configured") {
+		t.Fatalf("notice = %q, want no-editor message", m.notice)
+	}
+	if !strings.Contains(ansi.Strip(m.View()), "no editor configured") {
+		t.Error("footer should show the no-editor notice")
+	}
+}
+
+func TestOpenWithoutLocationShowsNotice(t *testing.T) {
+	m := newTestModel(t, &fakeController{})
+	// Cursor starts on file node f, which has no source location in the seed.
+	m = send(m, runes("o"))
+	if !strings.Contains(m.notice, "no source location") {
+		t.Fatalf("notice = %q, want no-location message", m.notice)
 	}
 }

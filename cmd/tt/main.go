@@ -25,6 +25,7 @@ import (
 	"github.com/nrf110/test-term/internal/adapter/pytest"
 	"github.com/nrf110/test-term/internal/adapter/vitest"
 	"github.com/nrf110/test-term/internal/client"
+	"github.com/nrf110/test-term/internal/config"
 	"github.com/nrf110/test-term/internal/engine"
 	"github.com/nrf110/test-term/internal/runner"
 	"github.com/nrf110/test-term/internal/server"
@@ -150,7 +151,7 @@ func runLocal(cmd *cobra.Command, dir string) error {
 	}
 	defer func() { _ = cl.Close() }()
 
-	return runProgram(ctx, cl, abs, "local")
+	return runProgram(ctx, cl, abs, "local", config.Load(abs).Editor)
 }
 
 // runServe runs the headless engine, blocking until interrupted.
@@ -200,12 +201,12 @@ func runConnect(cmd *cobra.Command, addr, token string) error {
 	}
 	defer func() { _ = cl.Close() }()
 
-	return runProgram(ctx, cl, addr, "remote "+addr)
+	return runProgram(ctx, cl, addr, "remote "+addr, config.Load(".").Editor)
 }
 
 // runProgram launches the TUI against a connected client.
-func runProgram(ctx context.Context, cl *client.Client, project, conn string) error {
-	model := tui.New(cl.Engine(), cl, project, conn)
+func runProgram(ctx context.Context, cl *client.Client, project, conn, editorCmd string) error {
+	model := tui.New(cl.Engine(), cl, project, conn, editorCmd)
 	p := tea.NewProgram(model, tea.WithAltScreen(), tea.WithContext(ctx))
 	_, err := p.Run()
 	return err
