@@ -7,6 +7,10 @@ hierarchical tree with live status, and runs them locally or on a remote
 machine. A single engine serves multiple observers — a local TUI, a remote TUI,
 and AI agents over MCP all watch and drive the **same** test session.
 
+<p align="center">
+  <img src="screenshot.png" alt="tt running its own Go test suite: a tree of tests grouped by package, all passing, with a summary header and keybinding footer" width="480">
+</p>
+
 ## Features
 
 - **Multiple frameworks** in one view: Go (`go test`), **Vitest**, and **pytest**.
