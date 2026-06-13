@@ -21,6 +21,14 @@ and AI agents over MCP all watch and drive the **same** test session.
 
 ## Install
 
+Homebrew (macOS and Linux):
+
+```sh
+brew install nrf110/tap/tt
+```
+
+With the Go toolchain:
+
 ```sh
 go install github.com/nrf110/test-term/cmd/tt@latest
 ```

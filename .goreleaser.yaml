@@ -43,3 +43,7 @@ release:
   github:
     owner: nrf110
     name: test-term
+
+# The Homebrew tap is updated by a dedicated release step (see
+# scripts/update-homebrew-formula.sh) rather than GoReleaser's deprecated
+# `brews`, so we keep a single cross-platform formula (casks are macOS-only).

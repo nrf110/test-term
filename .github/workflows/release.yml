@@ -25,3 +25,24 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  homebrew:
+    name: update homebrew tap
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update tap formula
+        # Skips quietly until the cross-repo tap token secret is configured, so a
+        # release never fails on account of the tap.
+        env:
+          VERSION: ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
+            echo "HOMEBREW_TAP_TOKEN not set; skipping tap update."
+            exit 0
+          fi
+          # github.ref_name is a tag like v0.1.2; strip the leading v.
+          ./scripts/update-homebrew-formula.sh "${VERSION#v}"
